@@ -362,6 +362,275 @@ describe('Concert Routes', () => {
         });
     }
     );
+
+        // Additional tests to improve coverage
+
+// 1. Search filter tests
+        test('should filter concerts by search term', async () => {
+            const mockConcerts = [
+                { id: 1, name: 'Rock Concert', genre: 'Rock', price: '$25.99', location: 'New York' },
+                { id: 2, name: 'Jazz Festival', genre: 'Jazz', price: '$30.99', location: 'Chicago' },
+                { id: 3, name: 'EDM Party', genre: 'Electronic', price: '$45.99', location: 'Miami' }
+            ];
+
+            concertModel.getAll.mockReturnValue(mockConcerts);
+
+            const response = await request(app).get('/api/concerts?search=jazz');
+
+            expect(response.status).toBe(200);
+            expect(response.body.concerts).toHaveLength(1);
+            expect(response.body.concerts[0].name).toBe('Jazz Festival');
+        });
+
+// 2. Location filtering tests
+        test('should filter concerts by city', async () => {
+            const mockConcerts = [
+                { id: 1, name: 'Rock Concert', genre: 'Rock', price: '$25.99', location: 'New York' },
+                { id: 2, name: 'Jazz Festival', genre: 'Jazz', price: '$30.99', location: 'Chicago' }
+            ];
+
+            concertModel.getAll.mockReturnValue(mockConcerts);
+
+            const response = await request(app).get('/api/concerts?city=Chicago');
+
+            expect(response.status).toBe(200);
+            expect(response.body.concerts).toHaveLength(1);
+            expect(response.body.concerts[0].location).toBe('Chicago');
+        });
+
+        test('should filter concerts by country', async () => {
+            const mockConcerts = [
+                { id: 1, name: 'Rock Concert', genre: 'Rock', price: '$25.99', location: 'New York' },
+                { id: 2, name: 'London Calling', genre: 'Rock', price: '$35.99', location: 'London' }
+            ];
+
+            concertModel.getAll.mockReturnValue(mockConcerts);
+
+            const response = await request(app).get('/api/concerts?country=UK');
+
+            expect(response.status).toBe(200);
+            expect(response.body.concerts).toHaveLength(1);
+            expect(response.body.concerts[0].location).toBe('London');
+        });
+
+// 3. Sort tests for other options
+        test('should sort concerts by date', async () => {
+            const mockConcerts = [
+                { id: 1, name: 'Later Concert', genre: 'Rock', price: '$25.99', date: '2025-12-31' },
+                { id: 2, name: 'Earlier Concert', genre: 'Rock', price: '$30.99', date: '2025-06-15' }
+            ];
+
+            concertModel.getAll.mockReturnValue(mockConcerts);
+
+            const response = await request(app).get('/api/concerts?orderBy=Date');
+
+            expect(response.status).toBe(200);
+            expect(response.body.concerts[0].name).toBe('Earlier Concert');
+            expect(response.body.concerts[1].name).toBe('Later Concert');
+        });
+
+        test('should sort concerts by location', async () => {
+            const mockConcerts = [
+                { id: 1, name: 'New York Concert', genre: 'Rock', price: '$25.99', location: 'New York' },
+                { id: 2, name: 'Austin Concert', genre: 'Rock', price: '$30.99', location: 'Austin' }
+            ];
+
+            concertModel.getAll.mockReturnValue(mockConcerts);
+
+            const response = await request(app).get('/api/concerts?orderBy=Location');
+
+            expect(response.status).toBe(200);
+            expect(response.body.concerts[0].location).toBe('Austin');
+            expect(response.body.concerts[1].location).toBe('New York');
+        });
+
+// 4. Analytics route tests
+        describe('GET /analytics route', () => {
+            test('should return analytics data', async () => {
+                const mockConcerts = [
+                    { id: 1, name: 'Rock Concert', genre: 'Rock', price: '$25.99', date: '2025-06-01' },
+                    { id: 2, name: 'Jazz Festival', genre: 'Jazz', price: '$45.99', date: '2025-06-01' },
+                    { id: 3, name: 'Classical Night', genre: 'Classical', price: '$65.99', date: '2025-07-01' }
+                ];
+
+                concertModel.getAll.mockReturnValue(mockConcerts);
+                concertModel.getLastUpdateTime.mockReturnValue('2023-01-01T12:00:00Z');
+
+                const response = await request(app).get('/api/concerts/analytics');
+
+                expect(response.status).toBe(200);
+                expect(response.body).toHaveProperty('priceDistributionData');
+                expect(response.body).toHaveProperty('genreDistributionData');
+                expect(response.body).toHaveProperty('priceTrendData');
+
+                // Verify genre distribution
+                expect(response.body.genreDistributionData).toHaveLength(3);
+                const genres = response.body.genreDistributionData.map(item => item.name);
+                expect(genres).toContain('Rock');
+                expect(genres).toContain('Jazz');
+                expect(genres).toContain('Classical');
+            });
+
+            test('should handle empty concert list for analytics', async () => {
+                concertModel.getAll.mockReturnValue([]);
+
+                const response = await request(app).get('/api/concerts/analytics');
+
+                expect(response.status).toBe(200);
+                expect(response.body.priceDistributionData).toHaveLength(0);
+                expect(response.body.genreDistributionData).toHaveLength(0);
+                expect(response.body.priceTrendData).toHaveLength(0);
+            });
+
+            test('should return 500 if analytics error occurs', async () => {
+                concertModel.getAll.mockImplementation(() => {
+                    throw new Error('Analytics error');
+                });
+
+                const response = await request(app).get('/api/concerts/analytics');
+
+                expect(response.status).toBe(500);
+                expect(response.body.error).toBe('Failed to get analytics data');
+            });
+        });
+
+// 5. Simulate update route tests
+        describe('POST /simulate-update route', () => {
+            test('should add a random concert', async () => {
+                concertModel.addRandom.mockReturnValue({ id: 999, name: 'Random Concert' });
+                Math.random = jest.fn().mockReturnValue(0); // Will result in case 0
+
+                const response = await request(app).post('/api/concerts/simulate-update');
+
+                expect(response.status).toBe(200);
+                expect(response.body.updateType).toBe(0);
+                expect(concertModel.addRandom).toHaveBeenCalled();
+            });
+
+            test('should remove a random concert', async () => {
+                concertModel.removeRandom.mockReturnValue({ id: 1, name: 'Removed Concert' });
+                Math.random = jest.fn().mockReturnValue(0.4); // Will result in case 1
+
+                const response = await request(app).post('/api/concerts/simulate-update');
+
+                expect(response.status).toBe(200);
+                expect(response.body.updateType).toBe(1);
+                expect(concertModel.removeRandom).toHaveBeenCalled();
+            });
+
+            test('should update a random price', async () => {
+                concertModel.updateRandomPrice.mockReturnValue({ id: 1, name: 'Updated Concert', price: '$99.99' });
+                Math.random = jest.fn().mockReturnValue(0.7); // Will result in case 2
+
+                const response = await request(app).post('/api/concerts/simulate-update');
+
+                expect(response.status).toBe(200);
+                expect(response.body.updateType).toBe(2);
+                expect(concertModel.updateRandomPrice).toHaveBeenCalled();
+            });
+
+            test('should handle errors in simulate-update', async () => {
+                Math.random = jest.fn().mockReturnValue(0);
+                concertModel.addRandom.mockImplementation(() => {
+                    throw new Error('Simulation error');
+                });
+
+                const response = await request(app).post('/api/concerts/simulate-update');
+
+                expect(response.status).toBe(500);
+                expect(response.body.error).toBe('Failed to simulate update');
+            });
+        });
+
+// 6. PUT route with invalid data test
+        test('should return 400 if update validation fails', async () => {
+            const invalidUpdate = {
+                name: '', // Empty name should fail validation
+                genre: 'Rock',
+                price: '$30.99',
+                location: 'Los Angeles',
+                date: '2025-01-01',
+                imageUrl: '/images/concert.jpg'
+            };
+
+            const response = await request(app)
+                .put('/api/concerts/1')
+                .send(invalidUpdate);
+
+            expect(response.status).toBe(400);
+            expect(response.body.errors).toHaveProperty('name');
+        });
+
+// 7. Error handling in other routes
+        test('should return 500 if get by ID fails', async () => {
+            concertModel.getById.mockImplementation(() => {
+                throw new Error('Database error');
+            });
+
+            const response = await request(app).get('/api/concerts/1');
+
+            expect(response.status).toBe(500);
+            expect(response.body.error).toBe('Failed to get concert');
+        });
+
+        test('should return 500 if create fails', async () => {
+            concertModel.create.mockImplementation(() => {
+                throw new Error('Database error');
+            });
+
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const futureDate = tomorrow.toISOString().split('T')[0];
+
+            const response = await request(app)
+                .post('/api/concerts')
+                .send({
+                    name: 'New Concert',
+                    genre: 'Rock',
+                    price: '$25.99',
+                    location: 'New York',
+                    date: futureDate,
+                    imageUrl: '/images/concert.jpg'
+                });
+
+            expect(response.status).toBe(500);
+            expect(response.body.error).toBe('Failed to create concert');
+        });
+
+        test('should return 500 if update fails', async () => {
+            concertModel.update.mockImplementation(() => {
+                throw new Error('Database error');
+            });
+
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const futureDate = tomorrow.toISOString().split('T')[0];
+
+            const response = await request(app)
+                .put('/api/concerts/1')
+                .send({
+                    name: 'Updated Concert',
+                    genre: 'Rock',
+                    price: '$25.99',
+                    location: 'New York',
+                    date: futureDate,
+                    imageUrl: '/images/concert.jpg'
+                });
+
+            expect(response.status).toBe(500);
+            expect(response.body.error).toBe('Failed to update concert');
+        });
+
+        test('should return 500 if delete fails', async () => {
+            concertModel.delete.mockImplementation(() => {
+                throw new Error('Database error');
+            });
+
+            const response = await request(app).delete('/api/concerts/1');
+
+            expect(response.status).toBe(500);
+            expect(response.body.error).toBe('Failed to delete concert');
+        });
 }
 );
 
