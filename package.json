@@ -1,0 +1,30 @@
+{
+  "name": "battlepass-backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "test:coverage": "jest --coverage"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.7.0",
+  "dependencies": {
+    "@faker-js/faker": "^9.7.0",
+    "body-parser": "^2.2.0",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "mssql2": "^3.3.1",
+    "mysql2": "^3.14.1",
+    "odbc": "^2.4.9",
+    "pg": "^8.15.6"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "jest-coverage-badges": "^1.1.2",
+    "nodemon": "^3.1.9",
+    "supertest": "^7.1.0"
+  }
+}
