@@ -68,6 +68,7 @@ const authRoutes = require('./routes/authRoutes');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+
 // Initialize database connection
 initDb()
     .then(() => {
@@ -81,8 +82,20 @@ initDb()
 app.use(bodyParser.json());
 
 // CORS setup
+// const corsOptions = {
+//     origin: 'http://localhost:5173',
+//     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+//     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+//     credentials: true,
+//     preflightContinue: false,
+//     optionsSuccessStatus: 204
+// };
+// app.use(cors(corsOptions));
+
 const corsOptions = {
-    origin: 'http://localhost:5173',
+    origin: process.env.NODE_ENV === 'production'
+        ? process.env.FRONTEND_URL || '*'
+        : 'http://localhost:5173',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
     credentials: true,
@@ -98,7 +111,7 @@ app.use('/api/auth', authRoutes);
 
 // Health check route
 app.get('/health', (req, res) => {
-    res.json({ status: 'Server is running' });
+    res.status(200).json({ status: 'Server is running' });
 });
 
 app.get('/api/test', (req, res) => {

@@ -1,47 +1,60 @@
 const { Pool } = require('pg');
 
-// PostgreSQL connection config
-const config = {
-    user: 'postgres',
-    password: 'Bog022004',
-    host: 'localhost',
-    port: 5432,
-    database: 'MPPConcerts'
-};
-
+// PostgreSQL connection configuration
 let pool = null;
 
 const initDb = async () => {
     try {
         if (!pool) {
             console.log('Attempting to connect to PostgreSQL...');
-            console.log('Connection config:', JSON.stringify({
-                host: config.host,
-                port: config.port,
-                database: config.database,
-                user: config.user
-            }));
 
-            // First connect to default postgres database to create our database if needed
-            const pgPool = new Pool({
-                ...config,
-                database: 'postgres'
-            });
+            // Use environment variables in production, fallback to local config for development
+            if (process.env.DATABASE_URL) {
+                // Production configuration with DATABASE_URL from Render
+                console.log('Using production database connection');
+                pool = new Pool({
+                    connectionString: process.env.DATABASE_URL,
+                    ssl: { rejectUnauthorized: false } // Required for most cloud DB providers
+                });
+            } else {
+                // Local development configuration
+                const config = {
+                    user: 'postgres',
+                    password: 'Bog022004',
+                    host: 'localhost',
+                    port: 5432,
+                    database: 'MPPConcerts'
+                };
 
-            // Check if our database exists
-            const dbResult = await pgPool.query(`
-        SELECT FROM pg_database WHERE datname = 'mppconcerts'
-      `);
+                console.log('Using local database connection');
+                console.log('Connection config:', JSON.stringify({
+                    host: config.host,
+                    port: config.port,
+                    database: config.database,
+                    user: config.user
+                }));
 
-            if (dbResult.rowCount === 0) {
-                console.log('Creating MPPConcerts database...');
-                await pgPool.query('CREATE DATABASE mppconcerts');
+                // Connect to postgres database first to create our database if needed
+                const pgPool = new Pool({
+                    ...config,
+                    database: 'postgres'
+                });
+
+                // Check if our database exists
+                const dbResult = await pgPool.query(`
+                    SELECT FROM pg_database WHERE datname = 'mppconcerts'
+                `);
+
+                if (dbResult.rowCount === 0) {
+                    console.log('Creating MPPConcerts database...');
+                    await pgPool.query('CREATE DATABASE mppconcerts');
+                }
+
+                await pgPool.end();
+
+                // Connect to our database
+                pool = new Pool(config);
             }
-
-            await pgPool.end();
-
-            // Now connect to our database
-            pool = new Pool(config);
 
             // Create tables if they don't exist
             await createTables();

@@ -1,15 +1,25 @@
 const { faker } = require('@faker-js/faker');
 const { Pool } = require('pg');
 
-const config = {
-    user: 'postgres',
-    password: 'Bog022004',
-    host: 'localhost',
-    port: 5432,
-    database: 'MPPConcerts'
-};
 
-const pool = new Pool(config);
+let pool;
+if (process.env.DATABASE_URL) {
+    // Production configuration with DATABASE_URL from Render
+    pool = new Pool({
+        connectionString: process.env.DATABASE_URL,
+        ssl: { rejectUnauthorized: false }
+    });
+} else {
+    // Local development fallback
+    const config = {
+        user: process.env.DB_USER || 'postgres' || 'bogdan',
+        password: process.env.DB_PASSWORD || 'Bog022004',
+        host: process.env.DB_HOST || 'localhost',
+        port: process.env.DB_PORT || 5432,
+        database: process.env.DB_NAME || 'MPPConcerts'
+    };
+    pool = new Pool(config);
+}
 const BATCH_SIZE = 5000;
 const TARGET_CONCERTS = 150000;
 
