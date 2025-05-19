@@ -105,6 +105,10 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 // Routes
+// Add this before your other routes
+app.get('/', (req, res) => {
+    res.json({ message: 'API is running. Use /api/concerts, /api/filters, or /api/auth endpoints' });
+});
 app.use('/api/concerts', concertRoutes);
 app.use('/api/filters', filtersRoutes);
 app.use('/api/auth', authRoutes);
