@@ -14,6 +14,8 @@ async function register(email, password, name) {
             return { error: 'User already exists' };
         }
 
+
+
         // Hash the password
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
