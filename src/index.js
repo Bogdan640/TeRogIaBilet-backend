@@ -92,9 +92,20 @@ app.use(bodyParser.json());
 // };
 // app.use(cors(corsOptions));
 
+// const corsOptions = {
+//     origin: process.env.NODE_ENV === 'production'
+//         ? process.env.FRONTEND_URL || '*'
+//         : 'http://localhost:5173',
+//     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+//     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+//     credentials: true,
+//     preflightContinue: false,
+//     optionsSuccessStatus: 204
+// };
+
 const corsOptions = {
     origin: process.env.NODE_ENV === 'production'
-        ? process.env.FRONTEND_URL || '*'
+        ? 'https://te-rog-ia-bilet-b619.vercel.app'  // Hardcode your frontend URL
         : 'http://localhost:5173',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
@@ -102,7 +113,10 @@ const corsOptions = {
     preflightContinue: false,
     optionsSuccessStatus: 204
 };
-app.use(cors(corsOptions));
+     app.use(cors(corsOptions));
+
+
+
 
 // Routes
 // Add this before your other routes
