@@ -1,10 +1,13 @@
 // src/models/auth.js
 const bcrypt = require('bcrypt');
-const { pool } = require('../db/database');
+const { getPool } = require('../db/database'); // Import getPool instead of pool
 const { generateToken } = require('../utils/jwt');
+const { generateSecret, generateQRCode, verifyToken } = require('../utils/twoFactorAuth');
 
 async function register(email, password, name) {
     try {
+        const pool = getPool(); // Get the pool instance
+
         // Check if user already exists
         const userCheck = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
         if (userCheck.rows.length > 0) {
@@ -35,6 +38,8 @@ async function register(email, password, name) {
 
 async function login(email, password) {
     try {
+        const pool = getPool(); // Get the pool instance
+
         // Find user by email
         const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
 
@@ -68,13 +73,10 @@ async function login(email, password) {
     }
 }
 
-module.exports = {
-    register,
-    login
-};
-
 async function setupTwoFactorAuth(userId) {
     try {
+        const pool = getPool(); // Get the pool instance
+
         // Get user email
         const userResult = await pool.query('SELECT email FROM users WHERE id = $1', [userId]);
 
@@ -108,6 +110,8 @@ async function setupTwoFactorAuth(userId) {
 
 async function verifyAndEnableTwoFactorAuth(userId, token) {
     try {
+        const pool = getPool(); // Get the pool instance
+
         // Get user and temp secret
         const userResult = await pool.query(
             'SELECT temp_two_factor_secret FROM users WHERE id = $1',
@@ -142,6 +146,8 @@ async function verifyAndEnableTwoFactorAuth(userId, token) {
 
 async function loginWith2FA(email, password) {
     try {
+        const pool = getPool(); // Get the pool instance
+
         // Find user by email
         const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
 
@@ -186,6 +192,8 @@ async function loginWith2FA(email, password) {
 
 async function verifyTwoFactorCode(userId, token) {
     try {
+        const pool = getPool(); // Get the pool instance
+
         // Get user and 2FA secret
         const userResult = await pool.query(
             'SELECT two_factor_secret FROM users WHERE id = $1 AND two_factor_enabled = true',
