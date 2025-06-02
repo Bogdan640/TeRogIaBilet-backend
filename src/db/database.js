@@ -118,23 +118,38 @@ const createTables = async () => {
 };
 
 // New function to update existing users
+// First, update your database.js to generate temporary 2FA secrets
+// Add this inside updateExistingUsersFor2FA() function
+
 const updateExistingUsersFor2FA = async () => {
     try {
-        // Update all existing users to have 2FA enabled by default
-        const updateResult = await pool.query(`
-            UPDATE users 
-            SET two_factor_enabled = TRUE 
-            WHERE two_factor_enabled = FALSE OR two_factor_enabled IS NULL
+        // First, get users who need 2FA secrets
+        const usersResult = await pool.query(`
+            SELECT id, email FROM users
+            WHERE two_factor_enabled = TRUE
+              AND two_factor_secret IS NULL
         `);
 
-        if (updateResult.rowCount > 0) {
-            console.log(`Updated ${updateResult.rowCount} existing users to have 2FA enabled by default`);
+        if (usersResult.rows.length > 0) {
+            console.log(`Generating 2FA secrets for ${usersResult.rows.length} users`);
+
+            // For each user, generate and store a 2FA secret
+            const { generateSecret } = require('../utils/twoFactorAuth');
+
+            for (const user of usersResult.rows) {
+                const secret = generateSecret(user.email);
+                await pool.query(
+                    'UPDATE users SET two_factor_secret = $1 WHERE id = $2',
+                    [secret.base32, user.id]
+                );
+            }
+
+            console.log('2FA secrets generated successfully');
         }
     } catch (error) {
-        console.error('Error updating existing users for 2FA:', error);
+        console.error('Error setting up 2FA secrets:', error);
     }
 };
-
 const insertSampleData = async () => {
     // Check if we already have data
     const result = await pool.query('SELECT COUNT(*) FROM genres');
