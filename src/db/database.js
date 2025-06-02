@@ -59,6 +59,9 @@ const initDb = async () => {
             // Create tables if they don't exist
             await createTables();
 
+            // Update existing users to have 2FA enabled by default
+            await updateExistingUsersFor2FA();
+
             // Insert sample data if needed
             await insertSampleData();
         }
@@ -80,7 +83,7 @@ const createTables = async () => {
             name VARCHAR(255) NOT NULL,
             temp_two_factor_secret VARCHAR(255),
             two_factor_secret VARCHAR(255),
-            two_factor_enabled BOOLEAN DEFAULT FALSE,
+            two_factor_enabled BOOLEAN DEFAULT TRUE,  -- Changed from FALSE to TRUE
             created_at TIMESTAMP DEFAULT NOW(),
             updated_at TIMESTAMP DEFAULT NOW()
             )
@@ -95,8 +98,8 @@ const createTables = async () => {
 
     const createConcertsTable = `
         CREATE TABLE IF NOT EXISTS concerts (
-            id SERIAL PRIMARY KEY,
-            title VARCHAR(100) NOT NULL,
+                                                id SERIAL PRIMARY KEY,
+                                                title VARCHAR(100) NOT NULL,
             genre_id INTEGER NOT NULL,
             price DECIMAL(10,2) NOT NULL,
             venue VARCHAR(100) NOT NULL,
@@ -105,13 +108,31 @@ const createTables = async () => {
             created_at TIMESTAMP DEFAULT NOW(),
             updated_at TIMESTAMP DEFAULT NOW(),
             FOREIGN KEY (genre_id) REFERENCES genres(id)
-        )
+            )
     `;
 
     await pool.query(createUsersTable);
     await pool.query(createGenresTable);
     await pool.query(createConcertsTable);
     console.log('Tables created successfully');
+};
+
+// New function to update existing users
+const updateExistingUsersFor2FA = async () => {
+    try {
+        // Update all existing users to have 2FA enabled by default
+        const updateResult = await pool.query(`
+            UPDATE users 
+            SET two_factor_enabled = TRUE 
+            WHERE two_factor_enabled = FALSE OR two_factor_enabled IS NULL
+        `);
+
+        if (updateResult.rowCount > 0) {
+            console.log(`Updated ${updateResult.rowCount} existing users to have 2FA enabled by default`);
+        }
+    } catch (error) {
+        console.error('Error updating existing users for 2FA:', error);
+    }
 };
 
 const insertSampleData = async () => {
@@ -125,24 +146,24 @@ const insertSampleData = async () => {
     // Insert genres
     const insertGenres = `
         INSERT INTO genres (name) VALUES
-                                      ('Rock'), ('Pop'), ('Hip-Hop'), ('Jazz'), ('Classical'),
-                                      ('Electronic'), ('Country'), ('R&B'), ('Metal'), ('Folk')
+            ('Rock'), ('Pop'), ('Hip-Hop'), ('Jazz'), ('Classical'),
+            ('Electronic'), ('Country'), ('R&B'), ('Metal'), ('Folk')
     `;
     await pool.query(insertGenres);
 
     // Insert concerts
     const insertConcerts = `
         INSERT INTO concerts (title, genre_id, price, venue, date, image_url) VALUES
-                                                                                  ('Summer Rock Fest', 1, 59.99, 'City Arena', '2023-07-15', 'https://example.com/rock.jpg'),
-                                                                                  ('Pop Extravaganza', 2, 79.99, 'Downtown Stadium', '2023-08-20', 'https://example.com/pop.jpg'),
-                                                                                  ('Hip-Hop Showcase', 3, 49.99, 'Urban Center', '2023-06-30', 'https://example.com/hiphop.jpg'),
-                                                                                  ('Jazz Night', 4, 39.99, 'Blue Note Club', '2023-09-10', 'https://example.com/jazz.jpg'),
-                                                                                  ('Symphony Orchestra', 5, 89.99, 'Grand Hall', '2023-10-05', 'https://example.com/classical.jpg'),
-                                                                                  ('Electronic Dance Festival', 6, 69.99, 'Tech Pavilion', '2023-08-05', 'https://example.com/electronic.jpg'),
-                                                                                  ('Country Music Fair', 7, 44.99, 'Ranch Stadium', '2023-07-25', 'https://example.com/country.jpg'),
-                                                                                  ('R&B Soulful Night', 8, 54.99, 'Soul Lounge', '2023-09-22', 'https://example.com/rnb.jpg'),
-                                                                                  ('Metal Mayhem', 9, 64.99, 'Dark Arena', '2023-10-31', 'https://example.com/metal.jpg'),
-                                                                                  ('Folk Festival', 10, 34.99, 'Heritage Park', '2023-06-18', 'https://example.com/folk.jpg')
+            ('Summer Rock Fest', 1, 59.99, 'City Arena', '2023-07-15', 'https://example.com/rock.jpg'),
+            ('Pop Extravaganza', 2, 79.99, 'Downtown Stadium', '2023-08-20', 'https://example.com/pop.jpg'),
+            ('Hip-Hop Showcase', 3, 49.99, 'Urban Center', '2023-06-30', 'https://example.com/hiphop.jpg'),
+            ('Jazz Night', 4, 39.99, 'Blue Note Club', '2023-09-10', 'https://example.com/jazz.jpg'),
+            ('Symphony Orchestra', 5, 89.99, 'Grand Hall', '2023-10-05', 'https://example.com/classical.jpg'),
+            ('Electronic Dance Festival', 6, 69.99, 'Tech Pavilion', '2023-08-05', 'https://example.com/electronic.jpg'),
+            ('Country Music Fair', 7, 44.99, 'Ranch Stadium', '2023-07-25', 'https://example.com/country.jpg'),
+            ('R&B Soulful Night', 8, 54.99, 'Soul Lounge', '2023-09-22', 'https://example.com/rnb.jpg'),
+            ('Metal Mayhem', 9, 64.99, 'Dark Arena', '2023-10-31', 'https://example.com/metal.jpg'),
+            ('Folk Festival', 10, 34.99, 'Heritage Park', '2023-06-18', 'https://example.com/folk.jpg')
     `;
     await pool.query(insertConcerts);
 
