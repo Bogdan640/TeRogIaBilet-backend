@@ -27,33 +27,32 @@ router.post('/register', async (req, res) => {
 });
 
 // Login user
-router.post('/login', async (req, res) => {
-    try {
-        const { email, password } = req.body;
-
-        if (!email || !password) {
-            return res.status(400).json({ error: 'Email and password are required' });
-        }
-
-        const result = await authModel.login(email, password);
-
-        if (result.error) {
-            return res.status(401).json({ error: result.error });
-        }
-
-        res.json(result);
-    } catch (error) {
-        console.error('Authentication error:', error);
-        res.status(500).json({ error: 'Authentication failed' });
-    }
-});
+// router.post('/login', async (req, res) => {
+//     try {
+//         const { email, password } = req.body;
+//
+//         if (!email || !password) {
+//             return res.status(400).json({ error: 'Email and password are required' });
+//         }
+//
+//         const result = await authModel.login(email, password);
+//
+//         if (result.error) {
+//             return res.status(401).json({ error: result.error });
+//         }
+//
+//         res.json(result);
+//     } catch (error) {
+//         console.error('Authentication error:', error);
+//         res.status(500).json({ error: 'Authentication failed' });
+//     }
+// });
 
 // Get current user (protected route example)
 router.get('/me', authenticateToken, (req, res) => {
     res.json({ user: req.user });
 });
 
-module.exports = router;
 
 // Setup 2FA for a user
 router.post('/2fa/setup', authenticateToken, async (req, res) => {
