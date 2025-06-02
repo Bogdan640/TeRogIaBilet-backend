@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const authModel = require('../models/auth');
 const { authenticateToken } = require('../middleware/auth');
+const { getPool } = require('../db/database');
 
 // Register new user
 router.post('/register', async (req, res) => {
@@ -133,6 +134,37 @@ router.post('/2fa/login', async (req, res) => {
     } catch (error) {
         console.error('2FA login error:', error);
         res.status(500).json({ error: '2FA login failed' });
+    }
+});
+
+// Add this to src/routes/authRoutes.js
+router.get('/2fa/qrcode', authenticateToken, async (req, res) => {
+    try {
+        const pool = getPool();
+
+        // Get the user's 2FA secret
+        const result = await pool.query(
+            'SELECT two_factor_secret, email FROM users WHERE id = $1',
+            [req.user.id]
+        );
+
+        if (result.rows.length === 0 || !result.rows[0].two_factor_secret) {
+            return res.status(404).json({ error: 'No 2FA secret found' });
+        }
+
+        const { two_factor_secret, email } = result.rows[0];
+
+        // Generate the otpauth URL
+        const otpauthUrl = `otpauth://totp/YourApp:${email}?secret=${two_factor_secret}&issuer=YourApp`;
+
+        // Generate QR code
+        const { generateQRCode } = require('../utils/twoFactorAuth');
+        const qrCode = await generateQRCode(otpauthUrl);
+
+        res.json({ qrCode });
+    } catch (error) {
+        console.error('Error retrieving QR code:', error);
+        res.status(500).json({ error: 'Failed to retrieve QR code' });
     }
 });
 
